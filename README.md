@@ -1,5 +1,26 @@
 # Emblem Tools
 
+Shared, reusable SDK modules for integrating Emblem Vault into any app.
+
+![License](https://img.shields.io/badge/license-MIT-green)
+![Built on](https://img.shields.io/badge/built%20on-Emblem%20Vault-5b8cff)
+![JavaScript](https://img.shields.io/badge/JavaScript-informational)
+
+## Related repositories
+
+Part of the Emblem ecosystem:
+
+- [Emblem-Tools](https://github.com/jakegallen/Emblem-Tools) - shared Emblem Vault SDK modules
+- [EmblemScan](https://github.com/jakegallen/EmblemScan) - on-chain Emblem Vault analytics
+- [EmblemWrap](https://github.com/jakegallen/EmblemWrap) - cross-chain asset wrapping service
+- [Migration-Calculator](https://github.com/jakegallen/Migration-Calculator) - migrate.fun LP recovery calculator
+- [OneShot](https://github.com/jakegallen/OneShot) - on-chain vault raffle marketplace
+- [Vault-Robbers](https://github.com/jakegallen/Vault-Robbers) - Robinhood Chain heist game ecosystem
+
+---
+
+## Emblem Tools
+
 Shared, reusable SDK modules for integrating Emblem Vault into any app. These are the building blocks our own products (EmblemWrapped, EmblemScan, Vault Robbers, OneShot) are built on.
 
 ## Modules

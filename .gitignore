@@ -1,0 +1,13 @@
+node_modules/
+.env
+.env.*
+*.log
+.DS_Store
+.esm-cache/
+.emblem_build/
+.vs-store/
+dist/
+build/
+*.pk
+*.key
+.imgcache/
