@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Emblem Wallet Connector</title>
+<style>
+  :root{ --bg:oklch(16% 0.02 265); --panel:oklch(20% 0.025 265); --line:oklch(32% 0.03 265); --ink:oklch(96% 0.01 265); --mut:oklch(70% 0.02 265); --acc:oklch(72% 0.15 250); --ok:oklch(80% 0.16 150); }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 ui-sans-serif,system-ui,"Segoe UI",Roboto,sans-serif;padding:40px 20px}
+  .wrap{max-width:760px;margin:0 auto}
+  h1{font-size:26px;margin:0 0 4px;letter-spacing:-.01em}
+  .sub{color:var(--mut);margin:0 0 26px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 18px 20px;margin:0 0 16px}
+  .card h2{font-size:13px;text-transform:uppercase;letter-spacing:.12em;color:var(--mut);margin:0 0 12px}
+  .row{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 10px}
+  button{font:inherit;font-weight:600;color:var(--ink);background:oklch(26% 0.03 265);border:1px solid var(--line);border-radius:9px;padding:8px 13px;cursor:pointer}
+  button:hover{border-color:var(--acc)}
+  button.p{background:linear-gradient(120deg,var(--acc),oklch(66% 0.16 285));color:oklch(18% 0.03 265);border:0}
+  code,.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px}
+  .out{background:oklch(13% 0.02 265);border:1px solid var(--line);border-radius:9px;padding:11px 13px;color:var(--ok);min-height:20px;word-break:break-all}
+  a{color:var(--acc)}
+  .dl{display:inline-flex;gap:8px;flex-wrap:wrap}
+  .pill{display:inline-block;background:oklch(26% 0.03 265);border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12px;color:var(--mut);margin:0 4px 4px 0}
+  .foot{color:var(--mut);font-size:13px;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Emblem Wallet Connector</h1>
+  <p class="sub">One shared multi-chain wallet layer for Emblem front-ends. Connect and sign, nothing app-specific. <span class="mono" id="ver"></span></p>
+
+  <div class="card">
+    <h2>Download</h2>
+    <div class="dl">
+      <a href="emblem-wallet-connector.js" download><button class="p">Download module (.js)</button></a>
+      <a href="emblem-wallet-connector.zip" download><button>Download handoff (.zip)</button></a>
+      <a href="README.md"><button>README</button></a>
+    </div>
+    <p class="foot">Import: <code>import { createEmblemWallet } from './emblem-wallet-connector.js'</code> or use <code>window.EmblemWallet</code>.</p>
+  </div>
+
+  <div class="card">
+    <h2>Try it (installed wallets)</h2>
+    <div class="row" id="evmRow"><button onclick="discover()">Scan wallets</button></div>
+    <div class="row">
+      <button onclick="cEvm()">Connect EVM</button>
+      <button onclick="cSol()">Connect Solana</button>
+      <button onclick="cXverse()">Connect Xverse</button>
+      <button onclick="cUnisat()">Connect Unisat</button>
+      <button onclick="cXcp()">Connect XCP</button>
+    </div>
+    <div class="out" id="out">Ready.</div>
+    <p class="foot">This page runs the exact connector any Emblem app uses. Nothing is sent anywhere.</p>
+  </div>
+</div>
+
+<script type="module">
+  import { createEmblemWallet, EMBLEM_WALLET_CONNECTOR_VERSION } from './emblem-wallet-connector.js';
+  const w = createEmblemWallet({ onWalletChange:(c,a)=>show(c+' account changed: '+(a||'(none)')) });
+  window.__w = w;
+  document.getElementById('ver').textContent = 'v'+EMBLEM_WALLET_CONNECTOR_VERSION;
+  const out = document.getElementById('out');
+  window.show = (m)=>{ out.textContent = typeof m==='string'?m:JSON.stringify(m,null,2); };
+  window.discover = ()=>{
+    const evm = w.discoverEvm(), sol = w.discoverSolana(), xcp = w.xcpAvailable();
+    const row = document.getElementById('evmRow');
+    row.innerHTML = '<button onclick="discover()">Rescan</button>' + evm.map(id=>`<button onclick="cEvmId('${id}')">${id}</button>`).join('');
+    show('EVM: '+(evm.join(', ')||'none')+'  |  Solana: '+(sol.join(', ')||'none')+'  |  XCP: '+(xcp?'yes':'no'));
+  };
+  window.cEvmId = async (id)=>{ try{ show(id+': '+await w.connectEvm(id)); }catch(e){ show('Error: '+(e.message||e)); } };
+  window.cEvm = async ()=>{ const l=w.discoverEvm(); if(!l.length) return show('No EVM wallet found'); cEvmId(l[0]); };
+  window.cSol = async ()=>{ try{ const l=w.discoverSolana(); if(!l.length) return show('No Solana wallet found'); show('Solana: '+await w.connectSolana(l[0])); }catch(e){ show('Error: '+(e.message||e)); } };
+  window.cXverse = async ()=>{ try{ show('Xverse ordinals: '+await w.connectXverse()); }catch(e){ show('Error: '+(e.message||e)); } };
+  window.cUnisat = async ()=>{ try{ show('Unisat: '+await w.connectUnisat()); }catch(e){ show('Error: '+(e.message||e)); } };
+  window.cXcp = async ()=>{ try{ if(!w.xcpAvailable()) return show('XCP Wallet not detected'); show(await w.connectXcp(false)); }catch(e){ show('Error: '+(e.message||e)); } };
+  discover();
+</script>
+</body>
+</html>

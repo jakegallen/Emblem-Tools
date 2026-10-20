@@ -1,0 +1,88 @@
+{
+  "name": "Emblem Wrapped SDK",
+  "updated": "2026-10-19",
+  "docsBase": "https://build-fdb6259277d28616cd0aa5a0.emblem.build/pub/main/emblem-app-handoffs/",
+  "note": "SINGLE SOURCE OF TRUTH for the Emblem Wrapped SDK pillar modules. Edit this one file to update BOTH the EmblemScan Developer Hub (Wrapped SDK tab, via /api/v1/sdk) AND the Emblem App Handoffs index (renders its pillar cards from this file). When a module ships a change, bump its version + lastUpdated + description + snippet here in the same pass.",
+  "modules": [
+    {
+      "id": "vault-sdk",
+      "featured": true,
+      "name": "Emblem Vault SDK",
+      "tag": "core SDK · the foundation",
+      "version": "npm · emblem-vault-sdk",
+      "lastUpdated": "2026-10-07",
+      "modulePath": "npm: emblem-vault-sdk · github.com/EmblemCompany/emblem-vault-sdk",
+      "description": "The canonical on-chain SDK everything else builds on. Create a vault, fund its derived addresses, mint the NFT, and run the two-step claim/reveal to take custody. EVM + Solana, with the modern EmblemVaultClient remote-signer flow.",
+      "detail": "The official Emblem Vault SDK (published on npm as emblem-vault-sdk) — the foundation of the whole stack. An Emblem Vault is an NFT that OWNS a set of underlying blockchain addresses (BTC, Ordinals, TAP, SOL, etc.); you create a vault, deposit assets into its derived addresses, mint the NFT, and later claim (unvault) to reveal the keys. Covers curated-collection discovery + select allow-lists, vault metadata/state, EVM + Solana, and both the modern EmblemVaultClient (remote-signer) flow and the legacy web3 flow. The Connector, Wrapping Companion, Metadata Assistant, and Collection Handler are all convenience layers on top of this; use the SDK directly when you want the raw primitives.",
+      "snippet": "npm i emblem-vault-sdk\nconst { EmblemVaultClient } = require('emblem-vault-sdk');\n// lifecycle: create a vault → fund its derived addresses → mint the NFT → claim (reveal keys)",
+      "docUrl": "https://github.com/EmblemCompany/emblem-vault-sdk",
+      "download": ""
+    },
+    {
+      "id": "pay-with-anything",
+      "featured": false,
+      "name": "Pay-With-Anything",
+      "tag": "relay funnel · any token → one token",
+      "version": "1.1.0",
+      "lastUpdated": "2026-10-19",
+      "modulePath": "emblem-pay-relay-proxy.js (server) + emblem-pay.client.js (browser)",
+      "description": "Non-custodial Relay funnel: the user pays in any supported token (ETH/SOL/BNB/USDC/USDT/DAI/USDG) across the 5 supported origins — Solana, Ethereum, Base, Robinhood, BNB — and your app receives an exact amount of ONE pinned destination token. Your server only proxies Relay quote/status + a read-only, method-whitelisted Solana RPC; the user's own wallet signs and submits. Powers the Vault Standoff buy-in and the Vault Robbers mint.",
+      "detail": "Two drop-in files. SERVER: makeRelayRouter({destinationChainId, destinationCurrency, supportedOrigins, enabled, relayApiKey, solRpc, rateLimit}) mounts GET /relay/chains, POST /relay/quote, GET /relay/status, POST /sol-rpc — the destination is PINNED server-side (can never be abused as an open swap oracle); origin is the user's choice but ALLOW-LISTED to supportedOrigins (default 5-chain set [792703809,1,8453,4663,56] = Solana/Ethereum/Base/Robinhood/BNB; no Arbitrum/Optimism/Polygon/BTC); every upstream call is rate-limited + timeout-bounded; the Solana RPC proxy forwards only whitelisted READ methods (getAddressLookupTable included for the Solana leg, never sendTransaction). BROWSER: EmblemPay({evmProvider, solWallet, apiBase}).relayDeliver({originChainId, originCurrency, amountAtomic, recipient, tradeType, onStage}) quotes, has the user's own wallet sign + submit (EVM eth_sendTransaction with EIP-1559 fees; Solana v0 tx assembled from Relay's raw instructions via the sol-rpc proxy), and polls to completion. Solana is a FIRST-CLASS origin (SOL + Solana-USDC). Also ships filterPayable(rows, perUnitUsd) — the hide-zero/dust/sub-cost balance filter (USD floor = per-mint/entry cost, $1 fallback) — and documents the always-on native gas leg (a small destination-chain gas slice bridged to the buyer even at 0% premium so a cross-chain payer can always sign). tradeType EXACT_OUTPUT = deliver a fixed destination amount; EXACT_INPUT = fixed-USD quote. No key is ever in the browser or on the server. Proven on solana / eth / base / bnb / robinhood.",
+      "snippet": "// SERVER (destination pinned, origins allow-listed)\napp.use('/api', makeRelayRouter({ destinationChainId: 4663, destinationCurrency: '0x77061B45…fC04', supportedOrigins: [792703809,1,8453,4663,56], enabled: ()=>true }));\n// BROWSER (user's wallet signs; Solana first-class)\nconst pay = EmblemPay({ evmProvider: window.ethereum, solWallet: window.solana, apiBase: 'api' });\nconst payable = pay.filterPayable(pricedRows, perUnitUsd);\nawait pay.relayDeliver({ originChainId, originCurrency, amountAtomic, recipient, onStage });",
+      "doc": "emblem-pay-with-anything-HANDOFF.md",
+      "download": "emblem-pay-with-anything.zip"
+    },
+    {
+      "id": "connector",
+      "name": "Emblem Connector",
+      "tag": "wallet · base module",
+      "version": "1.18.1-rvmint",
+      "lastUpdated": "2026-10-19",
+      "modulePath": "bundled into every Emblem app · download below",
+      "description": "One multi-chain connect + sign layer (EVM, Solana, Bitcoin/Ordinals, Counterparty, Stacks, Tezos). Every other module builds on it: wallet discovery, network switching, message + transaction signing, and gas top-ups. v1.18.1-rvmint is the supply-chain-hardened build — zero third-party CDN imports.",
+      "detail": "App-agnostic multi-chain wallet layer shared by every Emblem app (one file, all apps import it). Discovery, connect, chain-switch, signing, and cross-chain funding (no DOM, no secrets). All 6 chains route through it: EVM via EIP-6963 (MetaMask/Rabby/Coinbase/OKX/Rainbow/Phantom/Robinhood + add/switch for Ethereum/Base/Polygon/Shape/Robinhood), Solana, Bitcoin Ordinals (Unisat/Xverse), Counterparty (XCP Wallet + Horizon), Stacks (Xverse), and Tezos (Beacon). Relay funding (relayToUsdc / relayToNative) plus ensureGas gas-minimum enforcement. SUPPLY-CHAIN HARDENED (v1.18.1-rvmint): ethers loads from a locally-served UMD global (window.ethers), Solana web3/SPL + Tezos from a local ./vendor dir, zero esm.sh/jsdelivr — the always-on EVM path needs no external script origin in your CSP. sats-connect + mpl-token-metadata are neutralized in this build (EVM+Solana hub); re-vendor to re-enable Xverse/Ordinals/Counterparty/Stacks/Tezos. CANONICAL VERSION NOTE: v1.18.0 is the canonical latest for all general and wrapping apps and is now consistent across EmblemWrapped prod (vault-mint), the dev twin (vault-mint-dev), and the standalone module. This entry's v1.18.1-rvmint is the DELIBERATELY REDUCED supply-chain-hardened build for the Vault Robbers mint hub ONLY (the build shipped in this zip); it must NOT be used by EmblemWrapped or any multi-chain wrapping app because BTC/Ordinals/Counterparty/Stacks/Tezos are neutralized. NOTE: Polygon in the connector's network-add list is wallet-switch UX only, separate from any app's pay-origin scope. Base layer of the two-layer split; the Wrapping Companion sits on top.",
+      "snippet": "// connect a wallet + sign on any chain\nconst { address } = await connector.connect('ethereum');\nconst signature   = await connector.signMessage(address, 'Login to Emblem');\n// relayToUsdc(...) / ensureGas(...) handle cross-chain funding + gas",
+      "doc": "emblem-wallet-connector-HANDOFF.md",
+      "download": "emblem-wallet-connector.zip"
+    },
+    {
+      "id": "wrapping",
+      "name": "Wrapping Companion",
+      "tag": "wrap / unwrap lifecycle",
+      "version": "1.7.0",
+      "lastUpdated": "2026-10-19",
+      "modulePath": "bundled into every Emblem app",
+      "description": "Drop-in wrap and unwrap on top of the Connector: reads native holdings, auto-sends the asset into a created vault, mints the wrapped NFT, and sweeps on unwrap. Pairs with the Data API valuation endpoint to price what you are wrapping.",
+      "detail": "The batteries-included wrap ENGINE on top of the Connector + emblem-vault-sdk: wrapAsset() lifecycle (create → send → detect → ensure gas → mint, with nonce auto-retry + resume-after-reload), awaitDeposit(), unwrap(), per-chain confirmation thresholds, chain-aware explorers. EVM is fully implemented out of the box (makeEvmSender moves an ERC-721 with only the Connector, no ethers; buyEvmListing() is the shared Seaport buy engine incl. Robinhood). Exotic chains (Ordinals / Counterparty / Solana / Stacks / Tezos) are injected adapters. Unit-tested. Re-exports the shared Relay token list. Since v1.3.0: v1.4.0 buyEvmListing waits for the approval receipt + requires a successful fulfillment receipt (no false 'bought'); v1.5.0 mintCuratedWithRetry, the proven emblem.vision curated signed-price mint path for EVM L2 RWA (Beezie/Courtyard) where the plain SDK mint stalls; v1.6.0 makeEvmSender clamps the send gas limit (estimate +30%, 120k-1.5M) to fix the Polygon 56M-gas bug; v1.7.0 _qBig handles ethers-v5 BigNumber quote objects so the curated mint no longer dies on a BigInt conversion. NOTE: the connector.zip in the handoffs set still bundles the older v1.3.0 copy.",
+      "snippet": "// wrap a held asset into an Emblem vault NFT (create → send → mint)\nconst vault = await wrapAsset({ collection, asset, owner });\nawait awaitDeposit(vault.id);\n// later: unwrap(vault.id) sweeps the asset back out",
+      "doc": "emblem-wrapping-companion-HANDOFF.md",
+      "download": ""
+    },
+    {
+      "id": "metadata",
+      "name": "Metadata Assistant",
+      "tag": "art + name derivation",
+      "version": "server 0.9.0",
+      "lastUpdated": "2026-08-23",
+      "modulePath": "emblem-metadata-assistant/ (client + server, bundled into all apps)",
+      "description": "Resolves vault art and display names across every collection (Counterparty card art, dead-CDN blocklist, placeholder suppression). The same engine every Emblem app shares, so art is identical everywhere.",
+      "detail": "ONE shared codebase that derives a vault's display art + name across all Emblem apps, so a missing-image bug is provably in derivation, not in one app. Holds the single dead-area blocklist (EVTESTCOMMON, dead xchain/github card CDNs, dead EmBells bellscdn), every collection categorized (RWA = Collector Crypt / Courtyard / Beezie; Robinhood = its own ERC-6551 chain; Counterparty / Ordinals / Stacks / Tezos), the right image source per chain, outage-proof caching, and on-chain backups. resolveEmblemVaultId() derives the real Emblem vault id from (wrapper contract, tokenId). cleanName() standardizes display names. Blank is only ever the honest last resort, never a broken image.",
+      "snippet": "const meta = createVaultMeta({});\nconst art  = await meta.sourceArtByOwner(collection, addresses, holdings);\nconst name = meta.cleanName(rawName, collection);  // 'NodeMonkes NodeMonkes' → 'NodeMonkes'",
+      "doc": "emblem-metadata-assistant-HANDOFF.md",
+      "download": ""
+    },
+    {
+      "id": "collections",
+      "name": "Collection Handler",
+      "tag": "collection registry",
+      "version": "1.0.0",
+      "lastUpdated": "2026-10-07",
+      "modulePath": "/pub/main/vault-explorer/emblem-collection-handler.js",
+      "description": "The canonical Emblem collection registry for every app. Reads the enriched EmblemScan /api/v1/collections feed (standard, protocol, deposit chain, native assets, mintable, valuation) so apps stop hardcoding their own collection lists. byContract / bySlug / standardOf / depositInfo / isMintable / filter / detail.",
+      "detail": "One shared module every Emblem app imports instead of hardcoding its collection list. It reads the single-source registry from the EmblemScan Data API (/api/v1/collections + /collections/:id) which surfaces the Emblem curated registry plus per-collection valuation and deposit metadata, so the set never drifts. No deps; browser (window.EmblemCollections) + Node. 5-min cache, serves stale on a transient error. Getters: all(), byContract(), bySlug(), standardOf() (ERC721/ERC1155, authoritative), isMintable(), depositInfo() (depositChain + nativeAssets + protocol = what/where to deposit to wrap), filter({protocol,standard,chain,mintable}), detail()/contractsOf() (full per-chain contract map). Adoption target: the Emblem apps, one at a time.",
+      "snippet": "const C = window.EmblemCollections;              // or require('emblem-collection-handler')\nconst cc = await C.byContract('0x8e1bb30a…');     // full registry row\nawait C.standardOf(addr);                          // 'ERC721' | 'ERC1155'\nawait C.depositInfo(addr);                         // { depositChain, nativeAssets, protocol }",
+      "doc": "emblem-collection-handler-HANDOFF.md",
+      "download": "emblem-collection-handler.js"
+    }
+  ]
+}
