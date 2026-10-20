@@ -11,11 +11,8 @@ Shared, reusable SDK modules for integrating Emblem Vault into any app.
 Part of the Emblem ecosystem:
 
 - [Emblem-Tools](https://github.com/jakegallen/Emblem-Tools) - shared Emblem Vault SDK modules
-- [EmblemScan](https://github.com/jakegallen/EmblemScan) - on-chain Emblem Vault analytics
-- [EmblemWrap](https://github.com/jakegallen/EmblemWrap) - cross-chain asset wrapping service
 - [Migration-Calculator](https://github.com/jakegallen/Migration-Calculator) - migrate.fun LP recovery calculator
-- [OneShot](https://github.com/jakegallen/OneShot) - on-chain vault raffle marketplace
-- [Vault-Robbers](https://github.com/jakegallen/Vault-Robbers) - Robinhood Chain heist game ecosystem
+- [Emblem Vault (official)](https://github.com/EmblemCompany) - the official Emblem Vault organization
 
 ---
 
