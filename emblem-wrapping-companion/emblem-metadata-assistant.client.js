@@ -6,7 +6,7 @@
 //   2. Wrapping Companion   — the wrap lifecycle UX
 //   3. Metadata Assistant   — THIS: given a vault in ANY state, derive its display art + name, correctly, once
 //
-// Shared verbatim by EmblemWrapped (vault-mint), EmblemScan (vault-explorer), and Bazaaro (emblem-bazaar). All three
+// Shared verbatim by EmblemWrapped (vault-mint) and EmblemScan (vault-explorer). Both
 // render vault cards across many states (created, funded, wrapped, unwrapped, raffled, listed); this module is the ONE
 // place that knows the right image source per collection, the dead areas to never render, how each state derives its
 // art, and the cache/proxy plumbing. A display bug is then provably in derivation, not in an individual app.
