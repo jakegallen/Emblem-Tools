@@ -85,4 +85,4 @@ The **buy / acquire** flow (OpenSea Seaport, Magic Eden, Collector Crypt) is int
 
 ## Versioning
 
-`EMBLEM_WRAPPING_COMPANION_VERSION` (this module) and `EMBLEM_WALLET_CONNECTOR_VERSION` (the Connector dependency) are both exported. Keep the connector copy in this directory in sync with the canonical one in `emblem-bazaar/public/`.
+`EMBLEM_WRAPPING_COMPANION_VERSION` (this module) and `EMBLEM_WALLET_CONNECTOR_VERSION` (the Connector dependency) are both exported. Keep the connector copy in this directory in sync with the canonical one in `emblem-wallet-connector/`.
