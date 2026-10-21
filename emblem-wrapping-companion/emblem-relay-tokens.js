@@ -1,7 +1,7 @@
 // emblem-relay-tokens.js  (part of the Emblem Wrapping Companion pillar)
 // ─────────────────────────────────────────────────────────────────────────────
 // Canonical Relay-swappable token list used across Emblem front-ends (OneShot,
-// Bazaaro, EmblemWrapped) so every app recognises and prices the same set of
+// EmblemWrapped) so every app recognises and prices the same set of
 // balances that Relay can route to USDC or native gas.
 //
 // ARCHITECTURE:
