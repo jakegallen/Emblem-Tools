@@ -69,6 +69,15 @@ So an integrator who clones EmblemWrapped (`vault-mint`), the dev twin, OR the s
 ```
 A ready singleton is also on `window.EmblemWallet`.
 
+## Mobile in-app-browser warning (v1.19.0)
+On mobile, wallets inject `window.ethereum` / `window.solana` ONLY inside their own in-app browser. A user who opens the site in Safari or Chrome has no injected provider and dead-ends at connect. The connector exposes a PURE-DETECTION helper (no DOM, true to the no-DOM boundary) so each app renders its own banner however it likes:
+```js
+const hint = wallet.mobileWalletHint();   // { isMobile, hasInjected, shouldWarn, message }
+if (hint.shouldWarn) showBanner(hint.message);   // desktop + in-app-browser => shouldWarn:false
+// wallet.hasInjectedProvider() is also exported for standalone checks.
+```
+Detection spans the broad wallet set (MetaMask/OKX/Coinbase/Phantom/Trust/Bitget/Bybit/Rainbow/Jupiter/Backpack/Solflare/etc.). Re-check on load and ~1.5s later (some wallets inject late). Vault Robbers mint + Vault Standoff buy-ticket both ship this banner.
+
 ## Chains / wallets
 - EVM (EIP-6963 + injected): MetaMask, Rabby, Coinbase, OKX, Rainbow, Phantom, Trust, Brave,
   Zerion, Frame, Bitget, Enkrypt, Taho, Robinhood. Add+switch (`CHAIN_HEX`) for Ethereum, Base,
