@@ -96,6 +96,26 @@ input — use this when your price is fixed in the destination token). Pass `EXA
 input amount instead (use this to implement a fixed-USD quote: price the input in a stablecoin, take whatever
 destination token it buys).
 
+## Dual-wallet guard: require BOTH wallets before any payment (opt-in)
+
+When a Pay-with-Anything flow delivers to an EVM destination the user must then act on (sign a follow-up
+mint/entry tx on Robinhood Chain), a Solana-origin payer with no EVM wallet connected can pay and then be
+stranded with nothing to sign. Pass `requireBothWallets: true` to `relayDeliver` and it throws a clear,
+pre-payment error unless BOTH an EVM and a Solana wallet are connected:
+
+```js
+await pay.relayDeliver({ /* …origin, amount, recipient… */, requireBothWallets: true });
+// throws 'Connect your EVM (Robinhood) wallet before paying.' / '…Solana wallet…' BEFORE quoting.
+
+// Or check yourself to gate a Pay button:
+const { evm, solana } = await pay.walletsReady();
+```
+
+**Emblem house rule (Jake, 2026-10-21):** for the EVM connector / Pay-with-Anything tooling, both Solana and
+EVM should be connected before any payment is made. Vault Robbers mint + Vault Standoff set
+`requireBothWallets: true`. Pair this with the connector's `mobileWalletHint()` so mobile users get warned to
+open an in-app wallet browser first.
+
 ---
 
 ## Supported origins (the 5-chain scope, proven on mainnet)
