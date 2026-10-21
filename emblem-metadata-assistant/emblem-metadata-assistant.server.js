@@ -2,7 +2,7 @@
 // Emblem Metadata Assistant — SERVER half (Node / Express)
 // ─────────────────────────────────────────────────────────────────────────────
 // The third pillar (Emblem Connector = wallet, Wrapping Companion = wrap UX, Metadata Assistant = derive display art/name).
-// The ONE server-side derivation core, shared by EmblemWrapped, EmblemScan, and Bazaaro. A factory that each app's
+// The ONE server-side derivation core, shared by EmblemWrapped and EmblemScan. A factory that each app's
 // server.js calls with its own deps (DB access + fetch + the Emblem meta base + optional on-disk catalog), returning a
 // `resolveVaultArt` + a persistent cache + a `/api/vault-art` route mounter. The blocklist mirrors the client's DEAD_ART
 // exactly — keep them in sync (see emblem-metadata-assistant.client.js). This is where the xchain/github CDN-death fix lives.
@@ -110,7 +110,7 @@ async function evmOnchainArt(chain, contract, tokenId){
 // lowercase-alphanumeric. An Emblem vault for one of these is an ETH (or Polygon) wrapper NFT — its own tokenURI is only
 // the collection/wrapper image, so an app that holds only the wrapper (e.g. EmblemScan's activity rows, indexed off the
 // ETH wrapper contract) must read the SOURCE contract on the SOURCE chain with the SOURCE token id to get the true art.
-// Contracts/chains ported from the vault-mint / bazaar SRC_CONTRACT+SRC_CHAINCODE registries (single source of truth).
+// Contracts/chains ported from the vault-mint SRC_CONTRACT+SRC_CHAINCODE registries (single source of truth).
 const SOURCE_COLLECTIONS = {
   onchainhoodies:      { chain: 'robinhood', contract: '0x9ec6c5b9f572a9b02138e553bc5f5882da735f45' },
   stonkbrokers:        { chain: 'robinhood', contract: '0x539cdd042c2f3d93ebc5be7dfff0c79f3b4fabf0' },
