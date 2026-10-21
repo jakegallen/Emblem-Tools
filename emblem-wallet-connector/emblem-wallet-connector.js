@@ -37,7 +37,7 @@ import { BrowserProvider, isAddress, getAddress } from 'https://esm.sh/ethers@6.
 //   holds on the destination chain and tops up only the shortfall (+headroom) via Relay, no-op when already covered. The
 //   buy/mint/escrow funding primitive the wrapping companion builds on. Foundation for the two-layer split (Emblem
 //   Connector = wallet + funding; Wrapping Companion = lifecycle + auto-send + deposit detection + media + unwrap).
-export const EMBLEM_WALLET_CONNECTOR_VERSION = '1.18.0';   // 1.18.0: heal broken wallet RPC (stale keyless Ankr) on ensureChain + keyless Polygon RPCs; 1.17.0: wrappingOwner() strict EVM-only vault-owner rule
+export const EMBLEM_WALLET_CONNECTOR_VERSION = '1.19.0';   // 1.19.0: mobileWalletHint()/hasInjectedProvider() pure-detection helpers (mobile in-app-browser warning); 1.18.0: heal broken wallet RPC (stale keyless Ankr) on ensureChain + keyless Polygon RPCs; 1.17.0: wrappingOwner() strict EVM-only vault-owner rule
 
 // sats-connect is only needed for Xverse; load it lazily so BTC-less apps pay nothing.
 let _scMod = null;
@@ -57,6 +57,22 @@ export function createEmblemWallet(ctx){
       solAddress=null, solWalletId=null,
       btcAddress=null, btcOrdinalsPubkey=null, btcPaymentAddress=null, btcPaymentPubkey=null, btcWalletId=null,
       xcpAddrs=[], xcpProviderId=null;
+
+  // ── Mobile in-app-browser hint (pure detection, NO DOM) ──────────────────
+  // On mobile, wallets inject window.ethereum / window.solana ONLY inside their own in-app
+  // browser. A user who opens the site in Safari/Chrome has no injected provider and hits a
+  // dead end at connect. This returns a render-ready hint so the app can show its own banner;
+  // the connector never touches the DOM. Desktop and in-app-browser sessions return shouldWarn:false.
+  function hasInjectedProvider(){
+    try{ const w=window; return !!(w.ethereum||w.okxwallet||w.okexchain||w.trustwallet||w.trustWallet||w.bitkeep||w.bitget||w.bybitWallet||w.rainbow||w.enkrypt||w.tokenpocket||w.coinbaseWalletExtension||w.coinbaseWalletRequestProvider||w.exodus||w.$onekey||w.rabby||w.solana||(w.phantom&&w.phantom.solana)||w.backpack||w.solflare||w.glow||w.glowSolana||w.jupiter||w.coinbaseSolana); }catch(_){ return false; }
+  }
+  function isMobileUA(){ try{ return /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|Mobile/i.test((navigator&&navigator.userAgent)||''); }catch(_){ return false; } }
+  function mobileWalletHint(){
+    const isMobile=isMobileUA(), hasInjected=hasInjectedProvider();
+    const shouldWarn = isMobile && !hasInjected;
+    return { isMobile, hasInjected, shouldWarn,
+      message: shouldWarn ? 'Open this site inside your wallet app’s built-in browser (MetaMask, OKX, Coinbase Wallet, Phantom, Trust, etc.) to connect and pay. Mobile browsers like Safari or Chrome cannot reach your wallet.' : '' };
+  }
 
   // ── EVM: EIP-6963 discovery ──────────────────────────────────────────────
   // With several wallets installed, window.ethereum and the spoofable isMetaMask flag are
@@ -874,6 +890,8 @@ export function createEmblemWallet(ctx){
 
   return {
     version: EMBLEM_WALLET_CONNECTOR_VERSION,
+    // Mobile UX (pure detection, no DOM): surface a banner when a mobile user is outside a wallet in-app browser
+    mobileWalletHint, hasInjectedProvider,
     // Stacks (connect only)
     connectStacks, get stxAddress(){ return stxAddress; },
     // Tezos (shared BeaconWallet; the app signs FA2 ops with the shared window.__tezos lib)
