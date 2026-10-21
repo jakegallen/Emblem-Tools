@@ -11,7 +11,7 @@ A shared, app-agnostic multi-chain wallet layer for Emblem front-ends. It handle
 so it drops into any page. Your app keeps its own server / holdings / wrap logic and asks this
 connector for an address and a signer.
 
-Used by EmblemWrap (vault-mint) and Emblem's Bazaaro World from one source of truth: edit this
+Used by EmblemWrap (vault-mint) from one source of truth: edit this
 file and every app that loads it updates.
 
 ## Chains and wallets
