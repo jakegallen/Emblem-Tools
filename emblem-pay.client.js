@@ -79,8 +79,25 @@
 
     // Deliver the server-pinned destination token to `recipient`, paid from the user's chosen origin.
     // Resolves once Relay reports the swap filled. Throws on an un-routable pair or a failed swap.
+    // Are the wallets this flow needs actually connected right now? Returns { evm, solana }.
+    async function walletsReady() {
+      var evmOk = false, solOk = false;
+      if (evm) { try { evmOk = ((await evm.request({ method: 'eth_accounts' })) || []).length > 0; } catch (e) {} }
+      if (solWallet) { try { solOk = !!solWallet.publicKey || solWallet.isConnected === true; } catch (e) {} }
+      return { evm: evmOk, solana: solOk };
+    }
+
     async function relayDeliver(o) {
       o = o || {}; var S = o.onStage || noop;
+      // DUAL-WALLET GUARD (opt-in). For Emblem Pay-with-Anything flows where the payment delivers to an EVM
+      // destination the user must then act on (e.g. sign a follow-up mint/entry tx on Robinhood Chain), require
+      // BOTH an EVM and a Solana wallet to be connected before ANY payment is made. Vault Robbers + Standoff set
+      // requireBothWallets:true so a Solana-origin payer can't strand funds with no EVM wallet to finish the mint.
+      if (o.requireBothWallets) {
+        var _rdy = await walletsReady();
+        if (!_rdy.evm) throw new Error('Connect your EVM (Robinhood) wallet before paying.');
+        if (!_rdy.solana) throw new Error('Connect your Solana wallet before paying.');
+      }
       var user = o.user;
       if (!user && evm) { try { user = (await evm.request({ method: 'eth_accounts' }))[0]; } catch (e) {} }
       if (!user && o.originChainId === RELAY_SOLANA && solWallet) { try { if (!solWallet.publicKey && solWallet.connect) await solWallet.connect(); user = solWallet.publicKey.toString(); } catch (e) {} }
@@ -135,7 +152,7 @@
       return (assets || []).filter(function (a) { return a && a.usd != null && a.usd > 0 && a.usd >= floor; });
     }
 
-    return { relayDeliver: relayDeliver, chains: chains, filterPayable: filterPayable, SUPPORTED_ORIGINS: SUPPORTED_ORIGINS.slice(), _evmFeeParams: evmFeeParams };
+    return { relayDeliver: relayDeliver, walletsReady: walletsReady, chains: chains, filterPayable: filterPayable, SUPPORTED_ORIGINS: SUPPORTED_ORIGINS.slice(), _evmFeeParams: evmFeeParams };
   }
 
   if (typeof module !== 'undefined' && module.exports) module.exports = { EmblemPay: EmblemPay };
