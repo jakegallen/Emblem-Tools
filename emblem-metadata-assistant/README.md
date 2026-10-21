@@ -6,7 +6,7 @@ The third pillar of the Emblem front-end stack:
 2. **Wrapping Companion** — the wrap lifecycle UX
 3. **Metadata Assistant** — this: given a vault in *any* state, derive its display art + name, correctly, once
 
-All three apps (EmblemWrapped `vault-mint`, EmblemScan `vault-explorer`, Bazaaro `emblem-bazaar`) render vault cards across states (created, funded, wrapped, unwrapped, raffled, listed). Today each app carries its own copy of the derivation logic, and when those copies drift, images break in one app but not another. The Metadata Assistant makes derivation **one codebase**, so a display bug is provably "in how it's derived," never "this one app."
+All three apps (EmblemWrapped `vault-mint`, EmblemScan `vault-explorer`) render vault cards across states (created, funded, wrapped, unwrapped, raffled, listed). Today each app carries its own copy of the derivation logic, and when those copies drift, images break in one app but not another. The Metadata Assistant makes derivation **one codebase**, so a display bug is provably "in how it's derived," never "this one app."
 
 ```
 Emblem Connector (wallet + funding)
@@ -14,7 +14,7 @@ Emblem Connector (wallet + funding)
 Metadata Assistant   ← given a vault, derive its display art/name (client + server)
         │
 Wrapping Companion (wrap UX)   ─┐
-Wrapped / EmblemScan / Bazaaro ─┴─ all consume the Metadata Assistant for vault displays
+Wrapped / EmblemScan ─┴─ both consume the Metadata Assistant for vault displays
 ```
 
 ## What's inside (everything, in one place)
@@ -71,7 +71,6 @@ EmblemWrapped is live money and its resolver was just hardened, so it is the can
 
 1. **Ship the module** — done (this dir), v0.2.0.
 2. **EmblemScan** — swap its `cpCardImg`/`_isDeadImg` resolver to the Assistant; verify CP thumbnails. Lowest risk.
-3. **Bazaaro** — swap its raffle/vault image resolution (`cvRealImg`) to the Assistant.
 4. **EmblemWrapped** — delegate behind a flag, verify across wrap/unwrap/vaults, then retire the inline copy. The Wrapping Companion's image layer re-points here too.
 
 Each phase verified before the next. After phase 4, all three derive identically and there is exactly one derivation core.
