@@ -1,7 +1,7 @@
 // emblem-wallet-connector.js
 // ─────────────────────────────────────────────────────────────────────────────
 // Emblem Wallet Connector — the shared, app-agnostic multi-chain wallet layer used
-// across Emblem front-ends (EmblemWrap / vault-mint, Emblem's Bazaaro World, and any
+// across Emblem front-ends (EmblemWrap / vault-mint, and any
 // other Emblem team project). It handles DISCOVERY, CONNECT, CHAIN-SWITCH and SIGNING
 // only. It has NO DOM and NO server calls, so it drops into any page: your app keeps
 // its own server/holdings/wrap logic and asks this connector for an address + signer.
@@ -23,7 +23,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { BrowserProvider, isAddress, getAddress } from 'https://esm.sh/ethers@6.17.0';
 
-// v1.10.0 (2026-08-21): unified single source across EmblemWrapped (vault-mint), Bazaaro (emblem-bazaar) and the
+// v1.10.0 (2026-08-21): unified single source across EmblemWrapped (vault-mint) and the
 //   standalone module. Adds Relay funding — relayToUsdc / relayToNative / detectAssets (pay from any chain into mainnet
 //   USDC or native gas) — and hardens connectEvm (30s timeout + "use Phantom (EVM)" guidance so a dead extension stub
 //   can't hang the connect). Previously the three copies had drifted while all still labelled 1.9.2.
@@ -516,7 +516,7 @@ export function createEmblemWallet(ctx){
   }
 
   // ── Bitcoin: BIP-322 message signing + marketplace buy-PSBT signing (Xverse / Unisat) ─────────
-  // Shared so Bazaaro + EmblemWrapped both auth to ord.net and sign Ordinals buys the same way.
+  // Shared so Emblem front-ends both auth to ord.net and sign Ordinals buys the same way.
   function _b64ToHex(b64){ const bin=atob(b64); let h=''; for(let i=0;i<bin.length;i++){ h+=('0'+bin.charCodeAt(i).toString(16)).slice(-2); } return h; }
   function _hexToB64(hex){ let bin=''; const s=String(hex); for(let i=0;i<s.length;i+=2){ bin+=String.fromCharCode(parseInt(s.substr(i,2),16)); } return btoa(bin); }
   // BIP-322 simple message signature, returned as HEX (ord.net expects hex). Xverse/Unisat return base64 → convert.
@@ -554,7 +554,7 @@ export function createEmblemWallet(ctx){
   }
 
   // ── Solana: buy-and-wrap primitives (ported from vault-mint, the original wallet home) ───────
-  // Kept in the shared connector so Bazaaro + EmblemWrapped drive the same sign/transfer code.
+  // Kept in the shared connector so Emblem front-ends drive the same sign/transfer code.
   let _solWeb3=null, _solSpl=null, _solMpl=null;
   async function loadSolWeb3(){ if(!_solWeb3) _solWeb3=await import('https://esm.sh/@solana/web3.js@1.98.4?bundle'); return _solWeb3; }
   async function loadSolSpl(){ if(!_solSpl) _solSpl=await import('https://esm.sh/@solana/spl-token@0.4.15?bundle'); return _solSpl; }
