@@ -13,7 +13,7 @@
 //   Emblem content metadata (PREFER values[].image, the real card, over m.image which is often a placeholder/dead link).
 // ─────────────────────────────────────────────────────────────────────────────
 
-const EMBLEM_METADATA_ASSISTANT_VERSION = '0.9.0';   // 0.9.0: resolveEmblemVaultId({nft,tokenId}) + emblemViewerUrl(…) — canonical (wrapper contract + on-chain tokenId) → the vault's real Emblem id via GET {EV2}/v3/meta/{contract}/{tokenId}.tokenId, so the EmblemWrapped viewer link never uses the raw on-chain id (which resolves to an UNRELATED vault for ERC-721 wrappers). Uniform across ERC-721 + ERC-1155. // 0.8.0: cleanName(name,collection) — canonical display-name standardizer (strips a redundant collection prefix + collapses a doubled name), shared across apps so item names never read "NodeMonkes NodeMonkes" / "Beezie Collectibles LUBU". // 0.7.0: sourceArtByOwner(collection,addresses,{evmHoldings,solHoldings}) — resolve wrapped-RWA (Courtyard/Beezie/Cope/Robinhood/Collector Crypt) REAL item art from the vault's own source-chain deposit-address holdings, so raffle/consign art never blanks to EVTESTCOMMON. // 0.6.0: SOURCE_COLLECTIONS registry + sourceArt(collection,srcTokenId) — wrapped-RWA collections whose real art lives on a SOURCE chain (OnChainHoodies/StonkBrokers→Robinhood, Beezie→Base, Courtyard→Polygon, Cope Salada→Shape) resolve the source on-chain art from the source contract, so apps holding only the ETH wrapper (e.g. EmblemScan activity rows) get the true item art. // 0.5.0: built-in EVM on-chain art reader (tokenURI incl. inline image_data SVG; Base/Polygon/Shape/Robinhood)
+const EMBLEM_METADATA_ASSISTANT_VERSION = '0.9.1';   // 0.9.1: SSRF HARDENING — _ssrfSafeUrl is now async + DNS-resolving: strips IPv6 brackets, blocks IPv6 ULA/link-local/mapped/loopback, IPv4 loopback/RFC1918/link-local/CGNAT (100.64/10), rejects numeric-encoded hosts, re-checks the resolved IP; tokenURI metadata fetch (evmOnchainArt) uses redirect:'manual' and re-validates every 3xx hop. Closes proven bypasses: http://[::1]/, http://[::ffff:169.254.169.254]/, http://[fd00::1]/, http://100.100.100.200/. // 0.9.0: resolveEmblemVaultId({nft,tokenId}) + emblemViewerUrl(…) — canonical (wrapper contract + on-chain tokenId) → the vault's real Emblem id via GET {EV2}/v3/meta/{contract}/{tokenId}.tokenId, so the EmblemWrapped viewer link never uses the raw on-chain id (which resolves to an UNRELATED vault for ERC-721 wrappers). Uniform across ERC-721 + ERC-1155. // 0.8.0: cleanName(name,collection) — canonical display-name standardizer (strips a redundant collection prefix + collapses a doubled name), shared across apps so item names never read "NodeMonkes NodeMonkes" / "Beezie Collectibles LUBU". // 0.7.0: sourceArtByOwner(collection,addresses,{evmHoldings,solHoldings}) — resolve wrapped-RWA (Courtyard/Beezie/Cope/Robinhood/Collector Crypt) REAL item art from the vault's own source-chain deposit-address holdings, so raffle/consign art never blanks to EVTESTCOMMON. // 0.6.0: SOURCE_COLLECTIONS registry + sourceArt(collection,srcTokenId) — wrapped-RWA collections whose real art lives on a SOURCE chain (OnChainHoodies/StonkBrokers→Robinhood, Beezie→Base, Courtyard→Polygon, Cope Salada→Shape) resolve the source on-chain art from the source contract, so apps holding only the ETH wrapper (e.g. EmblemScan activity rows) get the true item art. // 0.5.0: built-in EVM on-chain art reader (tokenURI incl. inline image_data SVG; Base/Polygon/Shape/Robinhood)
 
 // Dead-area patterns as a STRING array = the single shared source. The client's DEAD_ART_SOURCES is copy-paste IDENTICAL,
 // so a mismatch between the two halves is a trivial diff. Client builds RegExp[]; server builds one combined RegExp.
@@ -92,7 +92,39 @@ const EVM_ART_RPC = {
 function _decodeAbiString(ret){ try{ const h = String(ret || '').replace(/^0x/, ''); if (h.length < 128) return ''; const len = parseInt(h.slice(64, 128), 16); if (!(len > 0)) return ''; return Buffer.from(h.slice(128, 128 + len * 2), 'hex').toString('utf8'); }catch(e){ return ''; } }
 async function _ethCall(rpc, to, data){ try{ const r = await fetch(rpc, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'eth_call', params: [{ to, data }, 'latest'] }), signal: AbortSignal.timeout(9000) }).then(x => x.json()).catch(() => null); return (r && r.result) || ''; }catch(e){ return ''; } }
 // SSRF guard: a token's on-chain tokenURI is attacker-influenceable; never let it point the server at a private/loopback/link-local host.
-function _ssrfSafeUrl(u){ try{ const url = new URL(u); if (url.protocol !== 'https:' && url.protocol !== 'http:') return false; const h = url.hostname.toLowerCase(); if (h === 'localhost' || h.endsWith('.internal') || h.endsWith('.local')) return false; if (/^(127\.|10\.|192\.168\.|169\.254\.|0\.|::1)/.test(h) || /^172\.(1[6-9]|2\d|3[01])\./.test(h)) return false; return true; }catch(e){ return false; } }
+// Hardened: strips IPv6 brackets, blocks IPv6 ULA (fc/fd) + link-local (fe80) + mapped (::ffff:) + loopback (::1/::), blocks IPv4
+// loopback/RFC1918/link-local/CGNAT (100.64.0.0/10), rejects numeric-encoded hosts (0x.., decimal), and DNS-resolves the host to
+// re-check the resolved IP (defeats rebinding + names that point at internal space). Returns the normalized href or null.
+const dns = require('dns').promises;
+function _isPrivateIp(ip){ ip = String(ip || '').toLowerCase().replace(/^\[|\]$/g, '');
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(ip)){ if (/^(127\.|10\.|0\.|169\.254\.|192\.168\.)/.test(ip)) return true;
+    if (/^172\.(1[6-9]|2\d|3[01])\./.test(ip)) return true; if (/^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(ip)) return true; return false; }
+  if (ip === '::1' || ip === '::') return true; if (ip.startsWith('fc') || ip.startsWith('fd') || ip.startsWith('fe80')) return true;
+  // IPv6-mapped IPv4 (::ffff:a.b.c.d OR Node's hex-compressed ::ffff:xxxx:xxxx) — extract the embedded IPv4 and re-check.
+  if (ip.startsWith('::ffff:')){ const tail = ip.slice(7);
+    if (/^\d+\.\d+\.\d+\.\d+$/.test(tail)) return _isPrivateIp(tail);
+    const m = tail.match(/^([0-9a-f]{1,4}):([0-9a-f]{1,4})$/); if (m){ const a = parseInt(m[1], 16), b = parseInt(m[2], 16);
+      return _isPrivateIp([(a >> 8) & 255, a & 255, (b >> 8) & 255, b & 255].join('.')); }
+    return true; }
+  return false; }
+async function _ssrfSafeUrl(raw){ let u; try{ u = new URL(String(raw)); }catch(e){ return null; }
+  if (u.protocol !== 'https:' && u.protocol !== 'http:') return null; if (u.username || u.password) return null;
+  const h = u.hostname.toLowerCase().replace(/^\[|\]$/g, ''); if (h === 'localhost' || h.endsWith('.internal') || h.endsWith('.local')) return null;
+  if (/^(0x[0-9a-f]+|\d+)$/i.test(h)) return null; if (_isPrivateIp(h)) return null;
+  try{ const recs = await dns.lookup(h, { all: true }); if (recs.some(r => _isPrivateIp(r.address))) return null; }catch(e){ return null; } return u.href; }
+// Fetch a metadata JSON with manual redirect handling: each hop (including every 3xx Location) is re-validated through the
+// SSRF guard, so an attacker can't open on an allowed public host and 302 the server to 169.254.169.254 / [::1] / etc.
+async function _ssrfFetchJson(startUrl){
+  let next = await _ssrfSafeUrl(startUrl);
+  for (let hop = 0; hop < 5 && next; hop++){
+    const r = await fetch(next, { redirect: 'manual', signal: AbortSignal.timeout(9000) }).catch(() => null);
+    if (!r) return null;
+    if (r.status >= 300 && r.status < 400){ const loc = r.headers.get('location'); if (!loc) return null; next = await _ssrfSafeUrl(new URL(loc, next).href); continue; }
+    if (!r.ok) return null;
+    return await r.json().catch(() => null);
+  }
+  return null;
+}
 async function evmOnchainArt(chain, contract, tokenId){
   const rpc = EVM_ART_RPC[String(chain || '').toLowerCase()];
   if (!rpc || !/^0x[0-9a-fA-F]{40}$/.test(String(contract || '')) || tokenId == null || String(tokenId) === '') return '';
@@ -102,7 +134,7 @@ async function evmOnchainArt(chain, contract, tokenId){
   if (!uri) return '';
   let md = null;
   if (/^data:application\/json/i.test(uri)){ try{ const b = uri.split(',')[1] || ''; md = JSON.parse(/;base64/i.test(uri) ? Buffer.from(b, 'base64').toString('utf8') : decodeURIComponent(b)); }catch(e){ return ''; } }
-  else if (/^(https?|ipfs):/i.test(uri)){ try{ const safe = uri.replace(/^ipfs:\/\//i, 'https://ipfs.io/ipfs/'); if (_ssrfSafeUrl(safe)) md = await fetch(safe, { signal: AbortSignal.timeout(9000) }).then(r => r.json()).catch(() => null); }catch(e){} }
+  else if (/^(https?|ipfs):/i.test(uri)){ try{ const safe = uri.replace(/^ipfs:\/\//i, 'https://ipfs.io/ipfs/'); md = await _ssrfFetchJson(safe); }catch(e){} }
   return artOkSrv(md && (md.image || md.image_url || md.imageUrl || md.image_data));
 }
 
