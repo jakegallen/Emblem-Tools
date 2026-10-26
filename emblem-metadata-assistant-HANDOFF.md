@@ -1,8 +1,10 @@
 # Emblem Metadata Assistant - Handoff
 
-> **Server v0.9.0 · client v0.5.0. The 3rd pillar of the Emblem front-end stack.** One shared codebase that derives a vault's display art + name, correctly, for every collection and every vault state, across the apps.
+> **Server v0.9.1 · client v0.5.0. The 3rd pillar of the Emblem front-end stack.** One shared codebase that derives a vault's display art + name, correctly, for every collection and every vault state, across the apps.
 >
-> **Version propagation (verified 2026-10-19), the general copies are now in sync:** the standalone module, the EmblemWrapped **prod** (`vault-mint`) server, AND the **dev twin** (`vault-mint-dev`) server are all at **server v0.9.0** — the dev twin was upgraded from v0.8.0, so the dev-lag is resolved. The client is **v0.5.0** everywhere (standalone, prod, dev). SEPARATELY, the `emblem-wallet-connector.zip` in this handoffs set still bundles an OLDER client at **v0.4.1** — that one copy has not been refreshed; re-sync it on the next connector-zip pass.
+> **Server v0.9.1 (2026-10-26) - SSRF hardening on the canonical server.** The `_ssrfSafeUrl` guard (used by `evmOnchainArt`'s attacker-influenceable tokenURI metadata fetch) is now async + DNS-resolving. It strips IPv6 brackets, blocks IPv6 ULA (fc/fd) + link-local (fe80) + mapped (`::ffff:`, including Node's hex-compressed form) + loopback (`::1`/`::`), blocks IPv4 loopback/RFC1918/link-local and CGNAT (100.64.0.0/10), rejects numeric-encoded hosts (`0x..`, decimal), and re-checks the DNS-resolved IP (defeats rebinding + names pointing at internal space). The metadata fetch now uses `redirect:'manual'` and re-validates every 3xx hop. Closes proven bypasses: `http://[::1]/`, `http://[::ffff:169.254.169.254]/`, `http://[fd00::1]/`, `http://100.100.100.200/`. Canonical only; app-copy propagation is the main agent's job (see below).
+>
+> **Version propagation (2026-10-26):** the CANONICAL standalone module is at **server v0.9.1 · client v0.5.0**. The app copies LAG and are being brought up by the main agent: `vault-explorer` server **v0.8.0 → v0.9.0** (then pick up v0.9.1 SSRF), EmblemWrapped prod/dev (`vault-mint`/`vault-mint-dev`) servers **v0.9.0 → v0.9.1**, and `wrapping-companion` client **v0.4.1 → v0.5.0**. SEPARATELY, the `emblem-wallet-connector.zip` in this handoffs set still bundles an OLDER metadata client at **v0.4.1** - re-sync it on the next connector-zip pass.
 
 ## Real Emblem vault id resolution (server v0.9.0, 2026-08-23)
 
