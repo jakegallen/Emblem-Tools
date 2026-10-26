@@ -12,7 +12,24 @@
 // art, and the cache/proxy plumbing. A display bug is then provably in derivation, not in an individual app.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const EMBLEM_METADATA_ASSISTANT_VERSION = '0.4.1';
+export const EMBLEM_METADATA_ASSISTANT_VERSION = '0.5.0';   // 0.5.0: cleanName(name,collection) — canonical display-name standardizer (strips a redundant collection prefix + collapses a doubled name) so item names never read "NodeMonkes NodeMonkes" / "Beezie Collectibles LUBU" across apps.
+
+// Canonical display-name standardizer, shared by every app. Given a raw item name + its collection, return just the token
+// name: strip an EXACT collection-name prefix (with an optional separator), and collapse an exact doubled name. Safe:
+// only an exact prefix is removed, so "Bitcoin Puppet #9326" (collection "Bitcoin Puppets") is left untouched.
+export function cleanName(name, collection){
+  let n = String(name == null ? '' : name).trim();
+  const c = String(collection == null ? '' : collection).trim();
+  if (!n) return n;
+  if (c){
+    const esc = c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const stripped = n.replace(new RegExp('^' + esc + '\\s*[·:\\-]?\\s+', 'i'), '').trim();
+    if (stripped) n = stripped;
+  }
+  const parts = n.split(/\s+/);
+  if (parts.length === 2 && parts[0].toLowerCase() === parts[1].toLowerCase()) n = parts[0];
+  return n.trim() || String(name == null ? '' : name).trim();
+}
 
 // Unwrap Helius/Cloudflare `/cdn-cgi/image/<opts>/<REAL_URL>` wrappers down to the clean underlying source.
 export function unwrapImg(u){ const s = String(u || ''); const m = s.match(/\/cdn-cgi\/image\/[^/]*\/((?:https?|ipfs|ar):\/\/.+)$/i); return m ? m[1] : s; }
