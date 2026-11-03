@@ -1,0 +1,9 @@
+{
+  "name": "emblem-multilang",
+  "version": "1.0.0",
+  "description": "Tiny dependency-free multi-language (i18n) helper for browser apps: language switcher, string lookup with interpolation, DOM scanning, browser-language detection, persistence, graceful fallback. Runs under a strict CSP.",
+  "main": "emblem-multilang.js",
+  "scripts": { "test": "node test.js" },
+  "keywords": ["i18n", "l10n", "multilanguage", "translation", "locale", "browser", "no-dependencies", "csp", "emblem"],
+  "license": "MIT"
+}
