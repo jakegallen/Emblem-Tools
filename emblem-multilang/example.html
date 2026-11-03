@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>emblem-multilang example</title>
+<style>
+  body{font-family:system-ui,sans-serif;max-width:640px;margin:40px auto;padding:0 20px;background:#0f1115;color:#e7ebf3}
+  h1{margin:.2em 0}
+  .row{display:flex;gap:10px;align-items:center;margin:18px 0}
+  button{padding:8px 14px;border:0;border-radius:8px;background:#2f8f6b;color:#fff;font:inherit;cursor:pointer}
+  select{padding:6px 10px;border-radius:8px;background:#1a1d24;color:#e7ebf3;border:1px solid #333}
+  .out{margin-top:16px;padding:12px;background:#1a1d24;border-radius:8px}
+  .muted{color:#9aa4b2;font-size:14px}
+</style>
+</head>
+<body>
+  <div class="row">
+    <strong class="muted" data-i18n="lang_label">Language</strong>
+    <span id="lang-slot"></span>
+  </div>
+
+  <h1 data-i18n="title">Vault Standoff</h1>
+  <p data-i18n="tagline">Last robber standing takes the pot.</p>
+
+  <div class="row">
+    <button id="buy" data-i18n="buy">Buy in</button>
+    <input data-i18n-attr="placeholder:amount_ph" style="padding:8px;border-radius:8px;border:1px solid #333;background:#1a1d24;color:#e7ebf3">
+  </div>
+
+  <div class="out"><span data-i18n="pot" data-i18n-vars='{"n":"0"}'>The pot is 0</span></div>
+  <p class="muted" data-i18n="note">Anything not translated yet falls back to English, never a blank.</p>
+
+<script src="emblem-multilang.js"></script>
+<script>
+  var LOCALES = {
+    en: { lang_label:"Language", title:"Vault Standoff", tagline:"Last robber standing takes the pot.",
+          buy:"Buy in", amount_ph:"Amount", pot:"The pot is {n}", note:"Anything not translated yet falls back to English, never a blank." },
+    es: { lang_label:"Idioma", title:"Duelo de Boveda", tagline:"El ultimo ladron en pie se lleva el bote.",
+          buy:"Entrar", amount_ph:"Cantidad", pot:"El bote es {n}", note:"Lo que aun no esta traducido vuelve al ingles, nunca queda en blanco." },
+    "pt-br": { lang_label:"Idioma", title:"Duelo do Cofre", tagline:"O ultimo ladrao de pe leva o pote.",
+          buy:"Entrar", amount_ph:"Valor", pot:"O pote e {n}" /* 'note' left out on purpose -> falls back to EN */ },
+    ja: { lang_label:"言語", title:"ボールト・スタンドオフ", tagline:"最後に残った強盗が総取り。",
+          buy:"参加する", amount_ph:"金額", pot:"ポットは {n}", note:"未翻訳の文字列は英語に戻り、空欄にはなりません。" }
+  };
+
+  EmblemLang.init({ fallback:"en", persistKey:"demo_lang", locales:LOCALES });
+  EmblemLang.apply();
+  document.getElementById("lang-slot").appendChild(
+    EmblemLang.switcher({ en:"English", es:"Espanol", "pt-br":"Portugues", ja:"日本語" })
+  );
+
+  // dynamic string example: update the pot live and re-translate just that node
+  var n = 0, potEl = document.querySelector('[data-i18n="pot"]');
+  function renderPot(){ potEl.textContent = EmblemLang.t("pot", { n: n.toLocaleString() }); }
+  document.getElementById("buy").addEventListener("click", function(){ n += 100; renderPot(); });
+  EmblemLang.onChange(renderPot);  // keep the dynamic string in sync on language change
+  renderPot();
+</script>
+</body>
+</html>
