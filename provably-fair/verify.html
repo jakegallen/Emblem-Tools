@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Provably-Fair Verifier</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; background: #0b0d12; color: #e7ebf3; font: 15px/1.5 ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 28px 20px 60px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  p.sub { color: #9aa4b2; margin: 0 0 24px; }
+  label { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #9aa4b2; margin: 14px 0 4px; }
+  input, textarea { width: 100%; box-sizing: border-box; background: #141821; border: 1px solid #272e3b; color: #e7ebf3; border-radius: 8px; padding: 10px 12px; font: 13px ui-monospace, SFMono-Regular, Menlo, monospace; }
+  textarea { min-height: 64px; resize: vertical; }
+  button { margin-top: 18px; background: #3b82f6; color: #fff; border: 0; border-radius: 8px; padding: 11px 18px; font-size: 15px; font-weight: 600; cursor: pointer; }
+  button:hover { background: #2f6fe0; }
+  .out { margin-top: 22px; border-radius: 10px; border: 1px solid #272e3b; overflow: hidden; display: none; }
+  .verdict { padding: 14px 16px; font-weight: 700; }
+  .ok { background: #0f2a1a; color: #5fe39b; }
+  .bad { background: #2a0f14; color: #ff8097; }
+  .body { padding: 14px 16px; }
+  .body div { margin: 4px 0; }
+  code { color: #c3ccda; word-break: break-all; }
+  .muted { color: #9aa4b2; font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Provably-Fair Verifier</h1>
+  <p class="sub">Confirm a revealed seed matches its published commit, then replay the draws. Everything runs in your browser; nothing is sent anywhere.</p>
+
+  <label for="commit">Committed hash (published before the round)</label>
+  <input id="commit" placeholder="0x...">
+
+  <label for="seed">Revealed seed (published after the round)</label>
+  <input id="seed" placeholder="0x... (32 bytes)">
+
+  <label for="round">Round ID</label>
+  <input id="round" placeholder="e.g. 42">
+
+  <label for="label">Draw label</label>
+  <input id="label" placeholder="e.g. winner" value="winner">
+
+  <label for="entries">Participants (optional JSON, for a ticket-weighted winner): { "0xabc": 10, "0xdef": 30 }</label>
+  <textarea id="entries" placeholder='{ "0xabc": 10, "0xdef": 30 }'></textarea>
+
+  <button id="go">Verify</button>
+
+  <div class="out" id="out">
+    <div class="verdict" id="verdict"></div>
+    <div class="body" id="detail"></div>
+  </div>
+</div>
+
+<script type="module">
+import { keccak256, toUtf8Bytes } from 'https://esm.sh/ethers@6.13.0';
+
+function hexToBytes(h){ const a = new Uint8Array(h.length/2); for(let i=0;i<a.length;i++) a[i] = parseInt(h.substr(i*2,2),16); return a; }
+// Identical derivation to the Node library (emblem-provably-fair index.js prng).
+function prng(seed, roundId, label){
+  let ctr = 0, pool = new Uint8Array(0), off = 0;
+  const base = String(seed) + ':' + String(roundId) + ':' + String(label);
+  function refill(){ pool = hexToBytes(keccak256(toUtf8Bytes(base + ':' + (ctr++))).slice(2)); off = 0; }
+  return function(){ if(off+6 > pool.length) refill(); let v=0; for(let i=0;i<6;i++){ v = v*256 + pool[off+i]; } off+=6; return v/281474976710656; };
+}
+function weightedWinner(rand, entries){
+  const keys = Object.keys(entries); const total = keys.reduce((a,k)=>a+Number(entries[k]||0),0);
+  if(total<=0) return null; let x = rand()*total, acc=0;
+  for(const k of keys){ acc += Number(entries[k]||0); if(x<=acc) return k; } return keys[keys.length-1];
+}
+
+const $ = id => document.getElementById(id);
+$('go').onclick = () => {
+  const seed = $('seed').value.trim(), commit = $('commit').value.trim();
+  const round = $('round').value.trim(), label = $('label').value.trim() || 'winner';
+  const out = $('out'), verdict = $('verdict'), detail = $('detail');
+  out.style.display = 'block'; detail.innerHTML = '';
+  if(!/^0x[0-9a-fA-F]{64}$/.test(seed)){ verdict.className='verdict bad'; verdict.textContent='Seed must be 0x + 64 hex chars (32 bytes).'; return; }
+  let recomputed;
+  try { recomputed = keccak256(seed).toLowerCase(); } catch(e){ verdict.className='verdict bad'; verdict.textContent='Could not hash the seed.'; return; }
+  const matches = commit && recomputed === commit.toLowerCase();
+  verdict.className = 'verdict ' + (matches ? 'ok' : 'bad');
+  verdict.textContent = matches ? 'Seed matches the committed hash - this result was fixed before the round.'
+                                : 'Seed does NOT match the committed hash.';
+  let html = `<div>keccak256(seed): <code>${recomputed}</code></div>`;
+  html += `<div>committed hash: <code>${commit ? commit.toLowerCase() : '(none entered)'}</code></div>`;
+  if(round){
+    const rand = prng(seed, round, label);
+    const draws = Array.from({length:5}, () => rand().toFixed(8));
+    html += `<div style="margin-top:10px" class="muted">First 5 draws of prng(seed, ${round}, "${label}"):</div>`;
+    html += `<div><code>${draws.join(', ')}</code></div>`;
+    const raw = $('entries').value.trim();
+    if(raw){
+      try { const entries = JSON.parse(raw); const w = weightedWinner(prng(seed, round, label), entries);
+        html += `<div style="margin-top:10px">Ticket-weighted winner: <code>${w}</code></div>`;
+      } catch(e){ html += `<div style="margin-top:10px" class="muted">Participants JSON did not parse.</div>`; }
+    }
+  }
+  detail.innerHTML = html;
+};
+</script>
+</body>
+</html>
