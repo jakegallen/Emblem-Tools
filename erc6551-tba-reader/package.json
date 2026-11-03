@@ -1,0 +1,11 @@
+{
+  "name": "erc6551-tba-reader",
+  "version": "1.0.0",
+  "description": "Bulk reads (TBA address, owner map, ERC-20 balances) and claim-calldata builder for ERC-6551 token-bound accounts, over Multicall3 so whole-collection reads work on weak RPCs. Extracted from Emblem's Vault Robbers.",
+  "license": "MIT",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": { "test": "node index.js --self-test" },
+  "keywords": ["erc-6551", "erc6551", "token-bound-account", "tba", "nft", "multicall3", "ethers", "web3", "emblem"],
+  "dependencies": { "ethers": "^6.13.0" }
+}
