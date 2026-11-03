@@ -1,0 +1,18 @@
+{
+  "name": "emblem-provably-fair",
+  "version": "1.0.0",
+  "description": "Commit-reveal randomness + an independent rig detector for provably-fair games and raffles. Extracted from Emblem's Vault Standoff.",
+  "license": "MIT",
+  "main": "index.js",
+  "type": "commonjs",
+  "bin": {
+    "fairness-watch": "fairness-watch.js"
+  },
+  "scripts": {
+    "test": "node index.js --self-test && node fairness-watch.js --self-test"
+  },
+  "keywords": ["provably-fair", "commit-reveal", "keccak256", "rng", "raffle", "lottery", "fairness", "web3", "emblem"],
+  "dependencies": {
+    "ethers": "^6.13.0"
+  }
+}
