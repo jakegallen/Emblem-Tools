@@ -1,0 +1,15 @@
+{
+  "name": "nft-layer-studio",
+  "version": "1.0.0",
+  "description": "Manifest-driven generative NFT art pipeline: weighted layer compositor, rarity ranking, ERC-721 metadata, BAYC-standard provenance, and IPFS pinning. Extracted from Emblem's Vault Robbers. Ships with placeholder art.",
+  "license": "MIT",
+  "type": "commonjs",
+  "bin": { "nft-layer-studio": "generate.js" },
+  "scripts": {
+    "demo": "node generate.js 8",
+    "generate": "node generate.js",
+    "pin": "node pin.mjs"
+  },
+  "keywords": ["nft", "generative-art", "pfp", "layers", "rarity", "provenance", "erc-721", "ipfs", "pinata", "emblem"],
+  "dependencies": { "sharp": "^0.33.0" }
+}
