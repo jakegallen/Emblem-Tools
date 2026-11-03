@@ -1,0 +1,16 @@
+{
+  "name": "Placeholder Collection",
+  "canvas": 512,
+  "categories": [
+    { "key": "background", "z": 1, "label": "Background", "traits": [
+      { "id": "ash",   "name": "Ash",   "file": "background/ash.svg",   "tier": "common" },
+      { "id": "smoke", "name": "Smoke", "file": "background/smoke.svg", "tier": "rare" },
+      { "id": "gold",  "name": "Gold",  "file": "background/gold.svg",  "tier": "ultra-rare" }
+    ] },
+    { "key": "body", "z": 2, "label": "Body", "traits": [
+      { "id": "round", "name": "Round", "file": "body/round.svg", "tier": "common" },
+      { "id": "block", "name": "Block", "file": "body/block.svg", "tier": "common" },
+      { "id": "prism", "name": "Prism", "file": "body/prism.svg", "tier": "rare" }
+    ] }
+  ]
+}
