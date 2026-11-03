@@ -1,0 +1,5 @@
+[
+  { "roundId": 1, "participants": { "0xaaa": 2, "0xbbb": 1, "0xccc": 3 }, "winner": "0xccc", "potWei": "30000000000000000000000", "rakeWei": "1500000000000000000000" },
+  { "roundId": 2, "participants": { "0xaaa": 1, "0xbbb": 2, "0xddd": 1 }, "winner": "0xbbb", "potWei": "20000000000000000000000", "rakeWei": "1000000000000000000000" },
+  { "roundId": 3, "participants": { "0xaaa": 3, "0xccc": 1, "0xeee": 2 }, "winner": "0xaaa", "potWei": "30000000000000000000000", "rakeWei": "1500000000000000000000" }
+]
