@@ -1,0 +1,9 @@
+{
+  "_meta": { "lang": "es" },
+  "Multi-language demo": "Demo multi-idioma",
+  "Pick a language on the right. This English page translates itself, including lines added after load.": "Elige un idioma a la derecha. Esta pagina en ingles se traduce sola, incluidas las lineas anadidas despues de cargar.",
+  "Add a live message": "Anadir un mensaje en vivo",
+  "You have {n} new messages": "Tienes {n} mensajes nuevos",
+  "Signed in as {name}": "Conectado como {name}",
+  "Last robber standing takes the vault.": "El ultimo ladron en pie se lleva la boveda."
+}
