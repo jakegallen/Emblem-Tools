@@ -1,9 +1,9 @@
 {
   "name": "emblem-multilang",
-  "version": "1.0.0",
-  "description": "Tiny dependency-free multi-language (i18n) helper for browser apps: language switcher, string lookup with interpolation, DOM scanning, browser-language detection, persistence, graceful fallback. Runs under a strict CSP.",
-  "main": "emblem-multilang.js",
-  "scripts": { "test": "node test.js" },
-  "keywords": ["i18n", "l10n", "multilanguage", "translation", "locale", "browser", "no-dependencies", "csp", "emblem"],
+  "version": "1.1.0",
+  "description": "Tiny dependency-free multi-language (i18n) for browser apps. Two engines: emblem-multilang-auto.js drops into an existing app and auto-translates the rendered English via a MutationObserver (29-language registry, RTL, no string wrapping); emblem-multilang.js is a key-based helper for new apps. Language switcher, interpolation, browser-language detect, persistence, graceful fallback. Runs under a strict CSP.",
+  "main": "emblem-multilang-auto.js",
+  "scripts": { "test": "node test-auto.js && node test.js" },
+  "keywords": ["i18n", "l10n", "multilanguage", "translation", "locale", "rtl", "mutationobserver", "browser", "no-dependencies", "csp", "emblem"],
   "license": "MIT"
 }
