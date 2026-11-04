@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>emblem-multilang-auto example</title>
+<style>
+  :root{ --eml-bg:#141821; --eml-fg:#e7ebf3; --eml-border:#2a2f3a; }
+  body{font-family:system-ui,sans-serif;max-width:640px;margin:40px auto;padding:0 20px;background:#0f1115;color:#e7ebf3}
+  .top{display:flex;justify-content:space-between;align-items:center;gap:12px}
+  h1{font-size:22px;margin:0}
+  button{padding:9px 14px;border:0;border-radius:8px;background:#2f8f6b;color:#fff;font:inherit;cursor:pointer}
+  .log{margin-top:16px;display:flex;flex-direction:column;gap:8px}
+  .log p{margin:0;padding:10px 12px;background:#161a22;border-radius:8px}
+  .muted{color:#9aa4b2}
+  [dir=rtl] body{direction:rtl}
+</style>
+</head>
+<body>
+  <div class="top">
+    <h1>Multi-language demo</h1>
+    <span id="langmount"></span>
+  </div>
+
+  <!-- Plain English. No data-i18n, no wrapping. The engine translates what it sees. -->
+  <p>Pick a language on the right. This English page translates itself, including lines added after load.</p>
+  <p class="muted">Signed in as satoshi.eth</p>
+
+  <button id="add">Add a live message</button>
+  <div class="log" id="log">
+    <p>You have 3 new messages</p>
+    <p>Last robber standing takes the vault.</p>
+  </div>
+
+<script>
+  // Configure BEFORE the engine loads. Here we limit the demo to 3 languages
+  // (one of them RTL) and point at this folder's sample catalogs.
+  window.EMBLEM_MULTILANG_CONFIG = {
+    catalogUrl: 'example-catalogs/catalog.{code}.json',
+    storageKey: 'eml_demo_lang',
+    mount: '#langmount',
+    languages: [
+      { code:'en', name:'English',  flag:'🇬🇧' },
+      { code:'es', name:'Español',  flag:'🇪🇸' },
+      { code:'ar', name:'العربية', flag:'🇸🇦', rtl:true }
+    ]
+  };
+</script>
+<script src="emblem-multilang-auto.js"></script>
+<script>
+  // Prove the MutationObserver translates NEW content too: add an English line
+  // after load and watch it come out in the active language with no extra code.
+  var n = 3;
+  document.getElementById('add').addEventListener('click', function () {
+    n++;
+    var p = document.createElement('p');
+    p.textContent = 'You have ' + n + ' new messages';  // plain English; engine localizes it
+    document.getElementById('log').appendChild(p);
+  });
+</script>
+</body>
+</html>
