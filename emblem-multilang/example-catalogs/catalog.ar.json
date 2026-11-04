@@ -1,0 +1,9 @@
+{
+  "_meta": { "lang": "ar" },
+  "Multi-language demo": "عرض متعدد اللغات",
+  "Pick a language on the right. This English page translates itself, including lines added after load.": "اختر لغة على اليمين. تترجم هذه الصفحة الانجليزية نفسها، بما في ذلك الاسطر المضافة بعد التحميل.",
+  "Add a live message": "اضف رسالة مباشرة",
+  "You have {n} new messages": "لديك {n} رسائل جديدة",
+  "Signed in as {name}": "تم تسجيل الدخول باسم {name}",
+  "Last robber standing takes the vault.": "اخر لص صامد ياخذ الخزنة."
+}
