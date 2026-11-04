@@ -1,88 +1,103 @@
 # emblem-multilang
 
-A tiny (about 150 lines, zero dependencies) multi-language helper for browser apps. It adds a language switcher, looks up translated strings, scans the DOM, remembers the visitor's choice, and detects their browser language. No build step, no framework, no `eval`, same-origin only, so it runs under a strict Content-Security-Policy (`script-src 'self'`).
+Tiny, zero-dependency multi-language (i18n) for browser apps. Add a language switcher, translate your UI, remember the visitor's choice, detect their browser language. No build step, no framework, no `eval`, same-origin only, so it runs under a strict Content-Security-Policy.
 
-"i18n" is the industry word for this (internationalization); this is just the plain-language version of it.
+"i18n" is the industry word for this; this is the plain-language version.
 
-## Why
+There are **two engines** in this package. Pick by how your app is built:
 
-Most i18n libraries are large, need a bundler, or pull strings over the network. This is one file you drop in. It is deliberately forgiving: any string you have not translated yet falls back to your base language, and then to the text already on the page, so a half-finished translation never leaves a blank button.
+| Engine | Use when | How you translate |
+|--------|----------|-------------------|
+| **`emblem-multilang-auto.js`** (recommended) | You are **adding languages to an existing app** whose UI is already English in the DOM (rendered from templates, `innerHTML`, toasts). | Drop it in, ship catalogs. A `MutationObserver` translates the rendered English automatically. You do **not** wrap strings. |
+| `emblem-multilang.js` | A **new app** where you want explicit, key-based control from the start. | Wrap text with `data-i18n` / `EmblemLang.t('key')`. |
 
-## Use it
+Both ship a themed language switcher, `{placeholder}` interpolation, browser-language detect, persisted choice, RTL support, and graceful English fallback (never a blank).
+
+---
+
+## `emblem-multilang-auto.js`  - the drop-in engine (recommended)
+
+The one that powers Vault Standoff's 29 languages. English **is** the source: a catalog maps each English string to its translation, the engine inverts that and translates the rendered English back out of the DOM as the app paints. English is a no-op, so the page is pixel-identical until a visitor picks a language.
+
+### Add it
 
 ```html
-<script src="emblem-multilang.js"></script>
-<script src="locales.js"></script>   <!-- your string tables, see below -->
-<script>
-  EmblemLang.init({
-    fallback: "en",
-    persistKey: "lang",     // remembers the choice in localStorage
-    locales: LOCALES        // { en: {...}, es: {...}, "pt-br": {...}, ... }
-  });
-  EmblemLang.apply();       // translate everything on the page now
+<span id="langmount"></span>   <!-- where the switcher appears -->
 
-  // drop a language switcher wherever you want it
-  document.getElementById("lang-slot").appendChild(
-    EmblemLang.switcher({ en: "English", es: "Espanol", "pt-br": "Portugues", ja: "日本語" })
-  );
+<script>
+  window.EMBLEM_MULTILANG_CONFIG = {
+    catalogUrl: 'i18n/catalog.{code}.json', // {code} replaced per language
+    storageKey: 'app_lang',                 // localStorage key for the choice
+    mount: '#langmount'                     // auto-render the switcher here
+  };
 </script>
+<script src="emblem-multilang-auto.js"></script>
 ```
 
-Mark up static text with `data-i18n` (and `data-i18n-attr` for attributes):
+That is the whole integration for a page that re-renders its own UI.
+
+### Catalogs
+
+`catalog.en.json` is the required base. Each other language mirrors its keys. **The key is the exact English string your app renders; the value is the translation.**
+
+```json
+{ "_meta": { "lang": "es" },
+  "Buy in": "Entrar",
+  "You have {n} new messages": "Tienes {n} mensajes nuevos",
+  "Signed in as {name}": "Conectado como {name}" }
+```
+
+- `{placeholder}` tokens are preserved and re-filled, so numbers, amounts and names stay dynamic.
+- A captured token that is itself a known English UI noun (e.g. a door/route name) is translated inline; the `name` slot is kept verbatim so usernames are never mangled (configurable via `verbatimSlots`).
+- Anything with no catalog entry stays English. Never blank.
+
+See `example-auto.html` + `example-catalogs/` for a runnable demo (English, Spanish, Arabic/RTL) that also shows the observer translating a line added **after** load.
+
+### The one integration contract
+
+The observer translates **English to a language**. Once the DOM holds (say) Spanish, switching straight to Arabic needs the English to be re-rendered first. The engine fires an **`emblem-lang-change`** event on every switch for exactly this: have your render loop repaint (most apps already re-render on state changes), or reload. Apps that repaint from English get full switching between any two languages for free.
+
+### Config (all optional)
+
+`catalogUrl` (string with `{code}` or `function(code)`), `storageKey`, `baseLang` (default `en`), `mount`, `languages` (override the built-in 29-language registry), `skipSelectors` (extra subtrees to never translate, on top of inputs / scripts / the switcher / `[data-no-i18n]`), `attrs` (translatable attributes, default `placeholder,title,aria-label`), `verbatimSlots` (template slots kept literal, default `['name']`), `event`, `autoBoot`.
+
+### API (`window.EmblemMultilang`)
+
+`t(key, vars)`, `tr(str)` / `translateText(str)` (translate one rendered string, for toasts/canvas), `translateDocument()`, `setLang(code)`, `getLang()`, `renderLanguageSwitcher(mountEl)`, `ready` (Promise), `fmtNumber`, `fmtCurrency`, `isRtl()`, `languages`, `configure(opts)`, `boot()`.
+
+---
+
+## `emblem-multilang.js`  - the key-based engine
+
+For new apps that want explicit control. Mark text with `data-i18n`, provide one object per language, call `EmblemLang.t('key')` for dynamic strings. See the API table below.
 
 ```html
 <h1 data-i18n="home.title">Vault Standoff</h1>
-<button data-i18n="buy.cta">Buy in</button>
-<input data-i18n-attr="placeholder:form.amount,title:form.amount_hint">
-<span data-i18n="pot" data-i18n-vars='{"n":"0"}'>The pot is 0</span>
+<input data-i18n-attr="placeholder:form.amount">
+<script src="emblem-multilang.js"></script>
+<script>
+  EmblemLang.init({ fallback:'en', persistKey:'lang', locales: LOCALES });
+  EmblemLang.apply();
+  document.getElementById('lang-slot').appendChild(EmblemLang.switcher());
+</script>
 ```
 
-Translate dynamic strings (toasts, status lines) in code:
+| Call | Does |
+|------|------|
+| `EmblemLang.init({locales, fallback, persistKey, locale, detect})` | Set up; choose active language. |
+| `EmblemLang.apply(root?)` | Translate `[data-i18n]` / `[data-i18n-attr]` under `root`. |
+| `EmblemLang.t(key, vars?)` | Translated string with `{var}` interpolation. |
+| `EmblemLang.setLocale(code)` | Switch, persist, re-scan, fire `onChange`. |
+| `EmblemLang.switcher(names?)` / `onChange(fn)` / `addLocale(code, table)` | Switcher element / change hook / runtime add. |
 
-```js
-toast(EmblemLang.t("errors.claim_failed"));
-status.textContent = EmblemLang.t("pot", { n: potValue });   // "El bote es 1200"
-```
+See `example.html` for the keyed demo.
 
-## Your string tables
-
-Flat keys or nested objects both work. Keep one object per language, English first as the base:
-
-```js
-window.LOCALES = {
-  en: {
-    "home.title": "Vault Standoff",
-    "buy.cta": "Buy in",
-    "pot": "The pot is {n}",
-    "errors.claim_failed": "Claim failed, try again"
-  },
-  es: {
-    "home.title": "Duelo de Boveda",
-    "buy.cta": "Entrar",
-    "pot": "El bote es {n}",
-    "errors.claim_failed": "Fallo el reclamo, intentalo de nuevo"
-  }
-};
-```
-
-## API
-
-| Call | What it does |
-|------|--------------|
-| `EmblemLang.init({locales, fallback, persistKey, locale, detect})` | Set up. Chooses the active language from (in order) an explicit `locale`, the saved choice, the browser, then `fallback`. |
-| `EmblemLang.apply(root?)` | Translate every `[data-i18n]` / `[data-i18n-attr]` under `root` (default `document`). Call after you inject new DOM. |
-| `EmblemLang.t(key, vars?)` | Return the translated string, interpolating `{vars}`. Falls back to base, then to the key. |
-| `EmblemLang.setLocale(code)` | Switch language, persist it, re-scan the DOM, fire `onChange`. |
-| `EmblemLang.getLocale()` / `available()` | Current code / list of loaded codes. |
-| `EmblemLang.switcher(names?)` | Build a `<select>` language switcher you can append anywhere. |
-| `EmblemLang.onChange(fn)` | Register a callback for when the language changes (re-render dynamic bits). |
-| `EmblemLang.addLocale(code, table)` | Add a language table at runtime (e.g. lazy-loaded). |
-| `EmblemLang.detect()` | The browser-language match, or `null`. |
+---
 
 ## Notes
 
-- **Graceful by design:** a missing key shows the base-language string, or the authored page text, never a blank.
-- **CSP-safe:** one static same-origin script, no inline code, no network calls. Add its `<script src>` and you are done.
-- **Open as you go:** ship English plus one language, add more tables later with `addLocale`; nothing else changes.
+- **CSP-safe:** one static same-origin script each, no inline code, no network beyond your own catalogs.
+- **Graceful:** a missing key or language shows the base-language string, then the authored text, never a blank.
+- **Tests:** `node test.js` (keyed engine), `node test-auto.js` (auto engine core). Both pass.
 
 MIT. Part of [Emblem-Tools](https://github.com/jakegallen/Emblem-Tools).
